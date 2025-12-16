@@ -29,7 +29,7 @@ Before starting, ensure the following are installed on your system:
     (Optional but recommended) Docker
 
 2. Clone the Repository
-    git clone https://github.com/vivekdatla96/codinginterview
+    git clone https://github.com/vivekdatla96/coding-interview_Assignment
     cd code-challenge-template
 
 3. Create and Activate Python Virtual Environment
