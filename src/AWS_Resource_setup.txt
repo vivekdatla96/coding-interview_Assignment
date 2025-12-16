@@ -1,0 +1,188 @@
+    ┌────────────┐
+          │  EventBridge│  (Schedule)
+          └──────┬─────┘
+                 │
+        ┌────────▼─────────┐
+        │  ECS Fargate Task │  (Ingestion + Aggregation)
+        └────────┬─────────┘
+                 │
+        ┌────────▼─────────┐
+        │   RDS MySQL       │
+        └────────┬─────────┘
+                 │
+        ┌────────▼─────────┐
+        │ ECS Fargate API   │
+        │ (Flask + Swagger)│
+        └────────┬─────────┘
+                 │
+        ┌────────▼─────────┐
+        │ ALB / API GW     │
+        └──────────────────┘
+
+1️ Database Layer – Amazon RDS (MySQL)
+Service
+Amazon RDS – MySQL
+
+Why
+Managed backups
+
+High availability
+
+Automated patching
+
+Works perfectly with your existing SQL schema
+
+Setup
+Engine: MySQL 8.x
+
+Instance type: db.t3.micro (dev), scale later
+
+Private subnet inside a VPC
+
+Security group allowing access only from ECS
+
+Tables
+weather_observations
+
+weather_yearly_stats
+
+No schema change required.
+
+2️ Ingestion & Aggregation – ECS Fargate (Scheduled Tasks)
+Service
+Amazon ECS (Fargate)
+
+EventBridge (CloudWatch Events) for scheduling
+
+Why
+Batch jobs run only when needed → cost efficient
+
+No servers to manage
+
+Same container can be reused locally & in prod
+
+Flow
+EventBridge triggers ECS task daily (or hourly)
+
+ECS runs:
+
+Raw file ingestion
+
+Deduplication logic
+
+Yearly aggregation logic
+
+Writes results to RDS
+
+Code Mapping
+src/
+ ├── ingestion/
+ ├── aggregation/
+Scheduling Example
+cron(0 1 * * ? *)  # Runs daily at 1 AM UTC
+3️ API Layer – ECS Fargate (Long-Running Service)
+Service
+Amazon ECS (Fargate)
+
+Application Load Balancer (ALB)
+
+Why
+Flask is stateless → ideal for horizontal scaling
+
+ECS handles restarts & scaling
+
+ALB provides HTTPS + routing
+
+Flow
+Flask app runs as ECS service
+
+ALB exposes /api/weather and /api/weather/stats
+
+Swagger UI available publicly (or restricted)
+
+Code Mapping
+src/
+ ├── api/
+ │   ├── app.py
+ │   ├── routes/
+Scaling
+Auto Scaling based on CPU or request count
+
+Start with 1 task, scale to N
+
+4️ Containerization – Docker
+Service
+Amazon ECR (Elastic Container Registry)
+
+Why
+Standard container registry
+
+Secure and tightly integrated with ECS
+
+Strategy
+Single base image
+
+Different entry points
+
+CMD ["python", "api/app.py"]       # API
+CMD ["python", "ingestion/main.py"] # Ingestion task
+5️ Secrets & Configuration
+Service
+AWS Secrets Manager or SSM Parameter Store
+
+Stored Values
+DB host
+
+DB username
+
+DB password
+
+Access
+IAM Role attached to ECS Task
+
+No secrets hardcoded
+
+6️ Networking & Security
+VPC
+Private subnets for ECS & RDS
+
+Public subnet only for ALB
+
+Security Groups
+Component	Access
+ALB	443 from Internet
+ECS API	From ALB only
+RDS	From ECS only
+7️ Logging & Monitoring
+Services
+CloudWatch Logs
+
+CloudWatch Metrics
+
+Logs
+API access logs
+
+Ingestion job logs
+
+Aggregation job logs
+
+Alerts
+Failed ECS tasks
+
+DB connectivity failures
+
+8️ CI/CD (Optional but Recommended)
+Tools
+GitHub Actions
+
+AWS CLI
+
+Pipeline
+Run unit tests
+
+Build Docker image
+
+Push to ECR
+
+Update ECS service
+

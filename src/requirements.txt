@@ -1,0 +1,4 @@
+flask
+flask-restx
+mysql-connector-python
+pytest

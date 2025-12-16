@@ -1,0 +1,7 @@
+USE weather;
+
+CREATE TABLE IF NOT EXISTS stations (
+    station_id VARCHAR(20) PRIMARY KEY,
+    state CHAR(2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
